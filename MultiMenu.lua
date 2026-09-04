@@ -1,7 +1,7 @@
 script_name("MultiMenu")
 script_author("369Miko")
-script_version("1.81")
-script_description("Ìóëüòè-ìåíþøêà ñ íóæíûìè ôèøå÷êàìè äëÿ ãåéçîíîâöåâ.")
+script_version("1.80")
+script_description("Мульти-менюшка с нужными фишечками для гейзоновцев.")
 
 require "lib.moonloader"
 local vkeys = require "vkeys"
@@ -16,9 +16,9 @@ local json = require('json')
 encoding.default = 'CP1251'
 local u8 = encoding.UTF8
 
--- Ññûëêè äëÿ àâòîîáíîâëåíèÿ
+-- Ссылки для автообновления
 local JSON_URL = "https://raw.githubusercontent.com/369miko/MultiMenu/main/MultiMenu.json"
-local SCRIPT_FILENAME = "MultiMenu.lua" -- Óêàæè òî÷íîå èìÿ òâîåãî ôàéëà ñêðèïòà â ïàïêå moonloader, åñëè îòëè÷àåòñÿ
+local SCRIPT_FILENAME = "MultiMenu.lua" -- Укажи точное имя твоего файла скрипта в папке moonloader, если отличается
 
 local isAutomatingSport = false
 local isAutomatingDrift = false
@@ -147,7 +147,7 @@ local last_autotax_time = os.clock()
 local toggleCefFn = nil
 local areCefEnabledFn = nil
 
--- Ôóíêöèÿ ïðîâåðêè è çàãðóçêè îáíîâëåíèé
+-- Функция проверки и загрузки обновлений
 local function check_and_update(is_manual)
     lua_thread.create(function()
         local status, response = pcall(requests.get, JSON_URL)
@@ -155,30 +155,30 @@ local function check_and_update(is_manual)
             local ok, version_info = pcall(json.decode, response.text)
             if ok and version_info and version_info.latest_version and version_info.download_url then
                 if version_info.latest_version ~= thisScript().version then
-                    sampAddChatMessage("{24ff86}[MultiMenu] {FFFFFF}Äîñòóïíî îáíîâëåíèå! Óñòàíàâëèâàåì âåðñèþ " .. version_info.latest_version, -1)
+                    sampAddChatMessage("{24ff86}[MultiMenu] {FFFFFF}Доступно обновление! Устанавливаем версию " .. version_info.latest_version, -1)
                     local dl_status, dl_resp = pcall(requests.get, version_info.download_url)
                     if dl_status and dl_resp and dl_resp.status_code == 200 then
                         local file = io.open("moonloader\\" .. SCRIPT_FILENAME, "w")
                         if file then
                             file:write(dl_resp.text)
                             file:close()
-                            sampAddChatMessage("{24ff86}[MultiMenu] {FFFFFF}Óñïåøíî! Áûëà óñòàíîâëåíà íîâàÿ âåðñèÿ. Ïåðåçàïóñòèòå ñêðèïò (/reload).", -1)
+                            sampAddChatMessage("{24ff86}[MultiMenu] {FFFFFF}Успешно! Была установлена новая версия. Перезапустите скрипт (/reload).", -1)
                         else
-                            sampAddChatMessage("{FF6060}[MultiMenu] Îøèáêà: íå óäàëîñü çàïèñàòü ôàéë ñêðèïòà.", -1)
+                            sampAddChatMessage("{FF6060}[MultiMenu] Ошибка: не удалось записать файл скрипта.", -1)
                         end
                     else
-                        sampAddChatMessage("{FF6060}[MultiMenu] Îøèáêà ñêà÷èâàíèÿ ôàéëà îáíîâëåíèÿ.", -1)
+                        sampAddChatMessage("{FF6060}[MultiMenu] Ошибка скачивания файла обновления.", -1)
                     end
                 else
                     if is_manual then
-                        sampAddChatMessage("{24ff86}[MultiMenu] {FFFFFF}Ó âàñ óñòàíîâëåíà ñàìàÿ íîâàÿ âåðñèÿ ñêðèïòà.", -1)
+                        sampAddChatMessage("{24ff86}[MultiMenu] {FFFFFF}У вас установлена самая новая версия скрипта.", -1)
                     end
                 end
             else
-                if is_manual then sampAddChatMessage("{FF6060}[MultiMenu] Îøèáêà ÷òåíèÿ äàííûõ èç JSON.", -1) end
+                if is_manual then sampAddChatMessage("{FF6060}[MultiMenu] Ошибка чтения данных из JSON.", -1) end
             end
         else
-            if is_manual then sampAddChatMessage("{FF6060}[MultiMenu] Íå óäàëîñü ïîäêëþ÷èòüñÿ ê ñåðâåðó îáíîâëåíèé.", -1) end
+            if is_manual then sampAddChatMessage("{FF6060}[MultiMenu] Не удалось подключиться к серверу обновлений.", -1) end
         end
     end)
 end
@@ -291,14 +291,14 @@ function cefSend(data)
 end
 
 function doPayTaxes()
-    sampAddChatMessage("{24ff86}[MultiTool]{FFFFFF} Íà÷èíàþ îïëàòó...", -1)
+    sampAddChatMessage("{24ff86}[MultiTool]{FFFFFF} Начинаю оплату...", -1)
     sampSendChat("/phone")
     wait(1000)
     cefSend("launchedApp|24")
-    sampAddChatMessage("{24ff86}[MultiTool]{FFFFFF} Îòêðûâàþ òåëåôîí...", -1)
+    sampAddChatMessage("{24ff86}[MultiTool]{FFFFFF} Открываю телефон...", -1)
 
     if not waitForDialog(6565, 5000) then
-        sampAddChatMessage("{FF6060}[MultiTool] Îøèáêà: òåëåôîí íå îòêðûëñÿ", -1)
+        sampAddChatMessage("{FF6060}[MultiTool] Ошибка: телефон не открылся", -1)
         return
     end
 
@@ -308,7 +308,7 @@ function doPayTaxes()
     local var_5_0 = waitForAnyDialog(5000)
 
     if not var_5_0 then
-        sampAddChatMessage("{FF6060}[MultiTool] Îøèáêà: äèàëîã íàëîãîâ íå ïîÿâèëñÿ", -1)
+        sampAddChatMessage("{FF6060}[MultiTool] Ошибка: диалог налогов не появился", -1)
         return
     end
 
@@ -316,20 +316,20 @@ function doPayTaxes()
 
     if var_5_0 == 15252 then
         sampSendDialogResponse(15252, 1, 0, "")
-        sampAddChatMessage("{90EE90}[MultiTool] Íàëîãè îïëà÷åíû!", -1)
+        sampAddChatMessage("{90EE90}[MultiTool] Налоги оплачены!", -1)
     else
         sampCloseCurrentDialogWithButton(1)
-        sampAddChatMessage("{90EE90}[MultiTool] Âñå íàëîãè óæå îïëà÷åíû!", -1)
+        sampAddChatMessage("{90EE90}[MultiTool] Все налоги уже оплачены!", -1)
     end
 
-    sampAddChatMessage("{FFFFFF}[MultiTool] Ïðîâåðÿþ îòåëü...", -1)
+    sampAddChatMessage("{FFFFFF}[MultiTool] Проверяю отель...", -1)
 
     if not waitForDialog(6565, 5000) then
         wait(500)
         cefSend("launchedApp|24")
 
         if not waitForDialog(6565, 5000) then
-            sampAddChatMessage("{FF6060}[MultiTool] Îøèáêà: ìåíþ òåëåôîíà íå îòêðûëîñü", -1)
+            sampAddChatMessage("{FF6060}[MultiTool] Ошибка: меню телефона не открылось", -1)
             return
         end
     end
@@ -338,7 +338,7 @@ function doPayTaxes()
     sampSendDialogResponse(6565, 1, 12, "")
 
     if not waitForDialog(26155, 5000) then
-        sampAddChatMessage("{FF6060}[MultiTool] Îøèáêà: äèàëîã îòåëÿ íå ïîÿâèëñÿ", -1)
+        sampAddChatMessage("{FF6060}[MultiTool] Ошибка: диалог отеля не появился", -1)
         return
     end
 
@@ -348,22 +348,22 @@ function doPayTaxes()
 
     if var_5_1 and tonumber(var_5_1) >= 12 then
         sampSendDialogResponse(26155, 1, 0, "")
-        sampAddChatMessage("{90EE90}[MultiTool] Îòåëü ïðîäë¸í íà 12 ÷àñîâ!", -1)
+        sampAddChatMessage("{90EE90}[MultiTool] Отель продлён на 12 часов!", -1)
     else
         sampSendDialogResponse(26155, 0, 0, "")
-        sampAddChatMessage("{FFAA60}[MultiTool] Îòåëü: ìîæíî ïðîäëèòü òîëüêî íà " .. (var_5_1 or "0") .. " ÷. (íóæíî 12)", -1)
+        sampAddChatMessage("{FFAA60}[MultiTool] Отель: можно продлить только на " .. (var_5_1 or "0") .. " ч. (нужно 12)", -1)
     end
 
     wait(300)
     cefSendRaw({220, 0, 27, 0})
     wait(500)
-    sampAddChatMessage("{FFFFFF}[MultiTool] Îòêðûâàþ /fammenu...", -1)
+    sampAddChatMessage("{FFFFFF}[MultiTool] Открываю /fammenu...", -1)
     sampSendChat("/fammenu")
     wait(1000)
     cefSend("familyMenu.apart.payTax")
 
     if not waitForDialog(27806, 5000) then
-        sampAddChatMessage("{FF6060}[MultiTool] Îøèáêà: äèàëîã êâàðòèðû íå ïîÿâèëñÿ", -1)
+        sampAddChatMessage("{FF6060}[MultiTool] Ошибка: диалог квартиры не появился", -1)
         return
     end
 
@@ -374,16 +374,16 @@ function doPayTaxes()
 
     if var_5_3 and tonumber(var_5_3) > 0 then
         sampSendDialogResponse(27806, 1, 0, var_5_3)
-        sampAddChatMessage("{90EE90}[MultiTool] Íàëîã íà êâàðòèðó îïëà÷åí: $" .. var_5_3, -1)
+        sampAddChatMessage("{90EE90}[MultiTool] Налог на квартиру оплачен: $" .. var_5_3, -1)
     else
         sampCloseCurrentDialogWithButton(0)
-        sampAddChatMessage("{90EE90}[MultiTool] Íàëîã íà êâàðòèðó: $0", -1)
+        sampAddChatMessage("{90EE90}[MultiTool] Налог на квартиру: $0", -1)
     end
 
     wait(500)
     cefSend("familyMenu.exit")
     wait(1000)
-    sampAddChatMessage("{90EE90}[MultiTool] Ïîëíûé öèêë îïëàòû çàâåðøåí!", -1)
+    sampAddChatMessage("{90EE90}[MultiTool] Полный цикл оплаты завершен!", -1)
 end
 
 ae.onArizonaDisplay = function(packet)
@@ -413,18 +413,18 @@ ae.onArizonaDisplay = function(packet)
                 local lowerTitle = title:lower()
                 
                 if isAutomatingSport then
-                    if lowerTitle:find("sport") or lowerTitle:find(u8:encode("ñïîðò")) then
+                    if lowerTitle:find("sport") or lowerTitle:find(u8:encode("спорт")) then
                         targetId = item.id or item.uid
-                    elseif lowerTitle:find("comfort") or lowerTitle:find(u8:encode("êîìôîðò")) then
+                    elseif lowerTitle:find("comfort") or lowerTitle:find(u8:encode("комфорт")) then
                         cancelId = item.id or item.uid
                     end
                 elseif isAutomatingDrift then
-                    if lowerTitle:find("drift") or lowerTitle:find(u8:encode("äðèôò")) then
+                    if lowerTitle:find("drift") or lowerTitle:find(u8:encode("дрифт")) then
                         targetId = item.id or item.uid
                     end
                 end
                 
-                if lowerTitle:find(u8:encode("âïåðåä")) or lowerTitle:find("vpered") or lowerTitle:find("forward") then
+                if lowerTitle:find(u8:encode("вперед")) or lowerTitle:find("vpered") or lowerTitle:find("forward") then
                     nextId = item.id or item.uid
                 end
             end
@@ -465,13 +465,13 @@ ae.onArizonaSendKey = function(packet)
 end
 
 local function getKeyName(id)
-    if id == 0 or id == nil then return "Íåò" end
+    if id == 0 or id == nil then return "Нет" end
     local name = vkeys.id_to_name(id)
     if name then return name:gsub("VK_", "") else return tostring(id) end
 end
 
 local function getFullKeyName(k, m)
-    if k == 0 or k == nil then return "Íåò" end
+    if k == 0 or k == nil then return "Нет" end
     local kname = getKeyName(k)
     if m and m ~= 0 then return getKeyName(m) .. " + " .. kname end
     return kname
@@ -612,8 +612,8 @@ local function showCaptcha()
     end
     captchaTable = {}
     
-    local bestStr = (mainIni.settings.best_captcha_time > 0) and string.format("%.3f", mainIni.settings.best_captcha_time) or "íåò"
-    sampShowDialog(8813, '{F89168}Ïðîâåðêà íà ðîáîòà', string.format('{FFFFFF}Ââåäèòå {C6FB4A}5{FFFFFF} ñèìâîëîâ.\n{C0C0C0}Ðåêîðä: {24ff86}%s', bestStr), 'Ïðèíÿòü', 'Îòìåíà', 1)
+    local bestStr = (mainIni.settings.best_captcha_time > 0) and string.format("%.3f", mainIni.settings.best_captcha_time) or "нет"
+    sampShowDialog(8813, '{F89168}Проверка на робота', string.format('{FFFFFF}Введите {C6FB4A}5{FFFFFF} символов.\n{C0C0C0}Рекорд: {24ff86}%s', bestStr), 'Принять', 'Отмена', 1)
     captime = os.clock()
 end
 
@@ -645,13 +645,13 @@ function sampev.onShowDialog(id, style, title, button1, button2, text)
         return {id, newStyle, title, button1, button2, text}
     end
 
-    if title:find("Ïðîâåðêà íà ðîáîòà") then
+    if title:find("Проверка на робота") then
         captcha_dialog_id = id
         real_captcha_start = os.clock()
     end
 end
 
--- Ôèîëåòîâàÿ ïîëóïðîçðà÷íàÿ òåìà îôîðìëåíèÿ èíòåðôåéñà
+-- Фиолетовая полупрозрачная тема оформления интерфейса
 imgui.OnInitialize(function()
     local style = imgui.GetStyle()
     local colors = style.Colors
@@ -691,7 +691,7 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
     imgui.SetNextWindowSize(imgui.ImVec2(540, 350), imgui.Cond.Always)
     imgui.PushStyleVarFloat(imgui.StyleVar.Alpha, menu_alpha)
     
-    if imgui.Begin(u8"Ìóëüòè-Ñêðèïò Ìåíþ (by 369Miko)", close_status, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize) then
+    if imgui.Begin(u8"Мульти-Скрипт Меню (by 369Miko)", close_status, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize) then
         
         if not close_status[0] then
             menu_show = false
@@ -711,41 +711,41 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
             
             if imgui.BeginTabBar("MultiMenuTabs", imgui.TabBarFlags_FittingPolicyResizeDown) then
 
-                -- ÂÊËÀÄÊÀ 1: ÈÍÔÎÐÌÀÖÈß (Ñ êíîïêîé îáíîâëåíèÿ)
-                if imgui.BeginTabItem(u8"Èíôîðìàöèÿ", nil, 0) then
+                -- ВКЛАДКА 1: ИНФОРМАЦИЯ (С кнопкой обновления)
+                if imgui.BeginTabItem(u8"Информация", nil, 0) then
                     imgui.Spacing()
-                    imgui.TextColored(imgui.ImVec4(0.75, 0.45, 0.95, 1.0), u8"Äîáðî ïîæàëîâàòü â Multi-Ñêðèïò!")
+                    imgui.TextColored(imgui.ImVec4(0.75, 0.45, 0.95, 1.0), u8"Добро пожаловать в Multi-Скрипт!")
                     imgui.Spacing()
                     imgui.Separator()
                     imgui.Spacing()
-                    imgui.Text(u8"Àêòèâíàÿ âåðñèÿ ñêðèïòà: " .. thisScript().version)
-                    imgui.Text(u8"Ñêðèïò ñîçäàë: 369Miko")
-                    imgui.Text(u8"Îáðàòíàÿ ñâÿçü: dc 369miko")
+                    imgui.Text(u8"Активная версия скрипта: " .. thisScript().version)
+                    imgui.Text(u8"Скрипт создал: 369Miko")
+                    imgui.Text(u8"Обратная связь: dc 369miko")
                     imgui.Spacing()
                     
-                    -- Êíîïêà ïðîâåðêè îáíîâëåíèé
-                    if imgui.Button(u8"Ïðîâåðèòü îáíîâëåíèå", imgui.ImVec2(-1, 24)) then
+                    -- Кнопка проверки обновлений
+                    if imgui.Button(u8"Проверить обновление", imgui.ImVec2(-1, 24)) then
                         check_and_update(true)
                     end
                     
                     imgui.Spacing()
                     imgui.Separator()
                     imgui.Spacing()
-                    imgui.TextColored(imgui.ImVec4(0.85, 0.75, 0.95, 1.0), u8"Êîìàíäû ñêðèïòà:")
-                    imgui.Text(u8" /fmenu  îòêðûòü/çàêðûòü ìåíþ")
-                    imgui.Text(u8" /w  áûñòðàÿ îïëàòà íàëîãîâ è îòåëÿ")
-                    imgui.TextColored(imgui.ImVec4(0.14, 1.0, 0.52, 1), u8"Òðåíèðîâêà êàï÷è: êîìàíäà /asd (àêòèâàöèÿ N àíãë.)")
-                    imgui.TextColored(imgui.ImVec4(0.67, 0.29, 0.32, 1), u8"Ïðè îòêëþ÷åíèè Old Esc Restore è Ñòàðûå äèàëîãè íóæåí /rec!")
-                    imgui.TextColored(imgui.ImVec4(1.0, 0.3, 0.3, 1.0), u8"Àâòîð ñêðèïòà ïñèõ íå ïèøèòå /67")
+                    imgui.TextColored(imgui.ImVec4(0.85, 0.75, 0.95, 1.0), u8"Команды скрипта:")
+                    imgui.Text(u8"• /fmenu — открыть/закрыть меню")
+                    imgui.Text(u8"• /w — быстрая оплата налогов и отеля")
+                    imgui.TextColored(imgui.ImVec4(0.14, 1.0, 0.52, 1), u8"Тренировка капчи: команда /asd (активация N англ.)")
+                    imgui.TextColored(imgui.ImVec4(0.67, 0.29, 0.32, 1), u8"При отключении Old Esc Restore и Старые диалоги нужен /rec!")
+                    imgui.TextColored(imgui.ImVec4(1.0, 0.3, 0.3, 1.0), u8"Автор скрипта псих не пишите /67")
                     imgui.Spacing()
                     imgui.Separator()
                     imgui.Spacing()
-                    imgui.TextWrapped(u8"Èíñòðóêöèÿ: Çàéäèòå âî âêëàäêó 'Èíôîðìàöèÿ' è íàæìèòå êíîïêó 'Ïðîâåðèòü îáíîâëåíèå', ÷òîáû îáíîâèòüñÿ äî ñàìîé ñâåæåé âåðñèè.")
+                    imgui.TextWrapped(u8"Инструкция: Зайдите во вкладку 'Информация' и нажмите кнопку 'Проверить обновление', чтобы обновиться до самой свежей версии.")
                     imgui.EndTabItem()
                 end
 
-                -- ÂÊËÀÄÊÀ 2: ÔÓÍÊÖÈÈ
-                if imgui.BeginTabItem(u8"Ôóíêöèè", nil, 0) then
+                -- ВКЛАДКА 2: ФУНКЦИИ
+                if imgui.BeginTabItem(u8"Функции", nil, 0) then
                     imgui.Spacing()
                     
                     local function drawCheckbox(name, toggle_key)
@@ -780,7 +780,7 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
                     drawCheckbox("Auto-Drift (ARZ)", "autodrift")
                     drawCheckbox("Anti-WBook & BP", "antibpwb")
                     drawCheckbox("Old ESC Restore", "oldesc")
-                    drawCheckbox("Ñòàðûå äèàëîãè (CEF Off)", "dlgstyle_enabled")
+                    drawCheckbox("Старые диалоги (CEF Off)", "dlgstyle_enabled")
                     
                     imgui.Columns(1) 
 
@@ -797,7 +797,7 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
 
                     if mainIni.toggles.dlgstyle_enabled then
                         imgui.Spacing()
-                        imgui.Text(u8"Âûáîð ñòèëÿ (1-5):")
+                        imgui.Text(u8"Выбор стиля (1-5):")
                         imgui.PushItemWidth(-1)
                         if imgui.SliderInt("##DlgStyle", dlg_style_val, 1, 5) then
                             mainIni.settings.dialog_style = dlg_style_val[0]
@@ -810,10 +810,10 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
                     imgui.EndTabItem()
                 end
 
-                -- ÂÊËÀÄÊÀ 3: ÁÈÍÄÅÐ
-                if imgui.BeginTabItem(u8"Áèíäåð", nil, 0) then
+                -- ВКЛАДКА 3: БИНДЕР
+                if imgui.BeginTabItem(u8"Биндер", nil, 0) then
                     imgui.Spacing()
-                    imgui.TextColored(imgui.ImVec4(0.7, 0.7, 0.7, 1), u8"Íàñòðîéêà êëàâèø áûñòðîãî äîñòóïà:")
+                    imgui.TextColored(imgui.ImVec4(0.7, 0.7, 0.7, 1), u8"Настройка клавиш быстрого доступа:")
                     imgui.Spacing()
                     imgui.Separator()
                     imgui.Spacing()
@@ -821,16 +821,16 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
                     local function drawBindRow(label, bind_key)
                         imgui.Text(u8(label))
                         imgui.SameLine(250)
-                        local btn_text = (bindWaiting == bind_key) and u8"< Æäó êíîïêó >" or string.format(u8"[%s]", getFullKeyName(mainIni.keys[bind_key], mainIni.mods[bind_key]))
+                        local btn_text = (bindWaiting == bind_key) and u8"< Жду кнопку >" or string.format(u8"[%s]", getFullKeyName(mainIni.keys[bind_key], mainIni.mods[bind_key]))
                         if imgui.Button(btn_text .. "##" .. bind_key, imgui.ImVec2(180, 20)) then
                             bindWaiting = bind_key
                         end
                     end
 
-                    drawBindRow("Øàð (Balloon)", "balloon")
+                    drawBindRow("Шар (Balloon)", "balloon")
                     drawBindRow("UnFreeze Camera", "unfreeze")
-                    drawBindRow("Ðóêà (Hand-Run)", "hand")
-                    drawBindRow("Ëèìèò ñêîðîñòè", "limit")
+                    drawBindRow("Рука (Hand-Run)", "hand")
+                    drawBindRow("Лимит скорости", "limit")
                     drawBindRow("Sbiv piss", "anim68")
 
                     imgui.Spacing()
@@ -838,7 +838,7 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
                     imgui.Spacing()
 
                     local autotax_state = imgui.new.bool(mainIni.toggles.autotax)
-                    if imgui.Checkbox(u8"Àâòî-îïëàòà íàëîãîâ", autotax_state) then
+                    if imgui.Checkbox(u8"Авто-оплата налогов", autotax_state) then
                         mainIni.toggles.autotax = autotax_state[0]
                         inicfg.save(mainIni, "fishki.ini")
                     end
@@ -846,7 +846,7 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
                     if mainIni.toggles.autotax then
                         imgui.Spacing()
                         imgui.PushItemWidth(-1)
-                        if imgui.SliderInt(u8"##AutoTaxInterval", autotax_interval_val, 1, 60, u8"Èíòåðâàë: %d ìèí.") then
+                        if imgui.SliderInt(u8"##AutoTaxInterval", autotax_interval_val, 1, 60, u8"Интервал: %d мин.") then
                             mainIni.settings.autotax_interval = autotax_interval_val[0]
                             inicfg.save(mainIni, "fishki.ini")
                         end
@@ -857,7 +857,7 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
                     imgui.Separator()
                     imgui.Spacing()
 
-                    if imgui.Button(u8"Îïëàòèòü íàëîãè ñåé÷àñ", imgui.ImVec2(-1, 24)) then
+                    if imgui.Button(u8"Оплатить налоги сейчас", imgui.ImVec2(-1, 24)) then
                         lua_thread.create(doPayTaxes)
                     end
 
@@ -865,7 +865,7 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
                     imgui.Separator()
 
                     if bindWaiting then
-                        imgui.TextColored(imgui.ImVec4(1, 0.4, 0.4, 1), u8"Íàæìèòå ñî÷åòàíèå (Alt/Ctrl/Shift) + íóæíóþ êíîïêó")
+                        imgui.TextColored(imgui.ImVec4(1, 0.4, 0.4, 1), u8"Нажмите сочетание (Alt/Ctrl/Shift) + нужную кнопку")
                     end
 
                     imgui.EndTabItem()
@@ -877,13 +877,13 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
             imgui.EndChild()
         end
 
-        -- Íèæíÿÿ ïàíåëü
+        -- Нижняя панель
         imgui.Separator()
         local playerName = (isSampAvailable() and sampGetPlayerNickname(select(2, sampGetPlayerIdByCharHandle(PLAYER_PED)))) or "Player"
         local serverIp, serverPort = (isSampAvailable() and sampGetCurrentServerAddress()) or "127.0.0.1", 7777
         local ping = (isSampAvailable() and sampGetPlayerPing(select(2, sampGetPlayerIdByCharHandle(PLAYER_PED)))) or 0
         local fps = math.floor(imgui.GetIO().Framerate)
-        local footerText = string.format("Íèê: %s | Ñåðâåð: %s:%d | Ïèíã: %d | FPS: %d", playerName, serverIp, serverPort, ping, fps)
+        local footerText = string.format("Ник: %s | Сервер: %s:%d | Пинг: %d | FPS: %d", playerName, serverIp, serverPort, ping, fps)
         imgui.TextColored(imgui.ImVec4(0.7, 0.5, 0.9, 1), u8(footerText))
 
         imgui.End()
@@ -906,7 +906,7 @@ function main()
         pcall(function() toggleCefFn(0) end)
     end
 
-    -- Àâòîìàòè÷åñêàÿ ïðîâåðêà îáíîâëåíèé ïðè çàïóñêå èãðû
+    -- Автоматическая проверка обновлений при запуске игры
     check_and_update(false)
 
     sampRegisterChatCommand("fmenu", function() menu_show = not menu_show end)
@@ -915,19 +915,19 @@ function main()
     sampRegisterChatCommand("67", function()
         active67 = not active67
         if active67 then
-            sampAddChatMessage("ÛÛ ÑÛÊÑ ÑÅÂÅÍ ÕÛÕÛ", 0x00FF00)
+            sampAddChatMessage("ЫЫ СЫКС СЕВЕН ХЫХЫ", 0x00FF00)
         else
-            sampAddChatMessage("ß ÁÎËØÅ ÍÅ ÑÛÊÑ ÑÅÂÅÍ ÕÍÛÊ ÕÍÛÊ", 0xFF0000)
+            sampAddChatMessage("Я БОЛШЕ НЕ СЫКС СЕВЕН ХНЫК ХНЫК", 0xFF0000)
             clearCharTasksImmediately(PLAYER_PED)
         end
     end)
 
     sampRegisterChatCommand("asd", function() 
         captchaState = not captchaState
-        sampAddChatMessage((captchaState and '{24ff86}[Captcha{24ff86}] {ffffff}Òðåíèðîâêà êàï÷è âêëþ÷åíà.' or '{24ff86}[Captcha{24ff86}] {ffffff}Òðåíèðîâêà êàï÷è âûêëþ÷åíà.'), -1)
+        sampAddChatMessage((captchaState and '{24ff86}[Captcha{24ff86}] {ffffff}Тренировка капчи включена.' or '{24ff86}[Captcha{24ff86}] {ffffff}Тренировка капчи выключена.'), -1)
     end)
     
-    sampAddChatMessage(string.format("{24ff86}[MultiTool {d1b02c}%s {ffffff}by {C0C0C0}369Miko{24ff86}] {ffffff}Óñïåøíî çàãðóæåí! Êîìàíäà: /fmenu", thisScript().version), -1)
+    sampAddChatMessage(string.format("{24ff86}[MultiTool {d1b02c}%s {ffffff}by {C0C0C0}369Miko{24ff86}] {ffffff}Успешно загружен! Команда: /fmenu", thisScript().version), -1)
 
     if not hasAnimationLoaded("GHANDS") then requestAnimation("GHANDS") end
     if not hasAnimationLoaded("PED") then requestAnimation("PED") end
@@ -961,7 +961,7 @@ function main()
     while true do
         wait(0)
         
-        -- Ïîòîê àâòî-îïëàòû íàëîãîâ ïî èíòåðâàëó â ìèíóòàõ
+        -- Поток авто-оплаты налогов по интервалу в минутах
         if mainIni.toggles.autotax then
             local current_time = os.clock()
             local interval_sec = mainIni.settings.autotax_interval * 60
@@ -997,12 +997,12 @@ function main()
                         end
                         
                         if is_new_record then
-                            sampAddChatMessage(string.format('{24ff86}ÍÎÂÛÉ ÐÅÊÎÐÄ: {24ff86}%.3f', current_time), -1)
+                            sampAddChatMessage(string.format('{24ff86}НОВЫЙ РЕКОРД: {24ff86}%.3f', current_time), -1)
                         else
-                            sampAddChatMessage(string.format('{24ff86}Êîä âåðíûé {C0C0C0}[%.3f] (Ðåêîðä: %.3f)', current_time, mainIni.settings.best_captcha_time), -1)
+                            sampAddChatMessage(string.format('{24ff86}Код верный {C0C0C0}[%.3f] (Рекорд: %.3f)', current_time, mainIni.settings.best_captcha_time), -1)
                         end
                     else 
-                        sampAddChatMessage(string.format('{ff0000}Íåâåðíûé êîä! {C0C0C0}[%.3f] ('..captcha..'0|'..input..')', current_time), -1) 
+                        sampAddChatMessage(string.format('{ff0000}Неверный код! {C0C0C0}[%.3f] ('..captcha..'0|'..input..')', current_time), -1) 
                     end
                 end
                 removeTextdraws()
@@ -1168,7 +1168,7 @@ function sampev.onSendDialogResponse(id, but, lis, input)
     if captcha_dialog_id and id == captcha_dialog_id then
         local time_taken = os.clock() - real_captcha_start
         local time_formatted = string.format("%.3f", time_taken)
-        sampAddChatMessage(string.format("{FFFFFF}Ââåäåííàÿ êàï÷à: {22A872}[%s]{FFFFFF}, âðåìÿ ââîäà: {22A872}[%s ñåê]{FFFFFF}", input, time_formatted), -1)
+        sampAddChatMessage(string.format("{FFFFFF}Введенная капча: {22A872}[%s]{FFFFFF}, время ввода: {22A872}[%s сек]{FFFFFF}", input, time_formatted), -1)
         captcha_dialog_id = nil
     end
 end
