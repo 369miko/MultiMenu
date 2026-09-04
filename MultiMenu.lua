@@ -1,6 +1,6 @@
-﻿script_name("MultiMenu")
+script_name("MultiMenu")
 script_author("369Miko")
-script_version("1.84")
+script_version("1.83")
 script_description("Мульти-менюшка с нужными фишечками для гейзоновцев.")
 
 require "lib.moonloader"
@@ -18,7 +18,7 @@ local u8 = encoding.UTF8
 
 -- Ссылки для автообновления (.luac)
 local JSON_URL = "https://raw.githubusercontent.com/369miko/MultiMenu/main/MultiMenu.json"
-local SCRIPT_FILENAME = "MultiMenu.lua"
+local SCRIPT_FILENAME = "MultiMenu.luac"
 
 local isAutomatingSport = false
 local isAutomatingDrift = false
