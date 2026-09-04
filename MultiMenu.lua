@@ -18,7 +18,7 @@ local u8 = encoding.UTF8
 
 -- Ссылки для автообновления (.luac)
 local JSON_URL = "https://raw.githubusercontent.com/369miko/MultiMenu/main/MultiMenu.json"
-local SCRIPT_FILENAME = "MultiMenu.luac"
+local SCRIPT_FILENAME = "MultiMenu.lua"
 
 local isAutomatingSport = false
 local isAutomatingDrift = false
