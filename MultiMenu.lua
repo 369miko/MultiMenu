@@ -1,6 +1,6 @@
 п»їscript_name("MultiMenu")
 script_author("369Miko")
-script_version("2.1")
+script_version("2.3")
 script_description("Оптимизированная мульти-менюшка для Arizona RP с биндером, фиксом диалогов и фембой-режимом!")
 
 require "lib.moonloader"
@@ -307,7 +307,6 @@ ae.onArizonaSendKey = function(packet)
     if (isAutomatingSport or isAutomatingDrift) and packet.key == 82 and not scriptKeyAction then return false end
 end
 
--- Глобальные функции биндера
 function getKeyName(id)
     if id == 0 or id == nil then return "Нет" end
     local name = vkeys.id_to_name(id)
@@ -371,9 +370,9 @@ end
 local function showCaptcha()
     removeTextdraws()
     
-    -- Фоновая панель на стандартном месте
-    t = t + 1; sampTextdrawCreate(t, "LD_SPAC:white", 220, 120); sampTextdrawSetLetterSizeAndColor(t, 0, 6.5, 0x80808080); sampTextdrawSetBoxColorAndSize(t, 1, 0xFF1A2432, 380, 0.0)
-    t = t + 1; sampTextdrawCreate(t, "LD_SPAC:white", 225, 125); sampTextdrawSetLetterSizeAndColor(t, 0, 5.5, 0x80808080); sampTextdrawSetBoxColorAndSize(t, 1, 0xFF759DA3, 375, 0.0)
+    -- Сдвигаем X на 15 пикселей вправо (с 220 на 235), и правую границу ширины тоже на 15 (с 380 на 395)
+    t = t + 1; sampTextdrawCreate(t, "LD_SPAC:white", 235, 120); sampTextdrawSetLetterSizeAndColor(t, 0, 6.5, 0x80808080); sampTextdrawSetBoxColorAndSize(t, 1, 0xFF1A2432, 395, 0.0)
+    t = t + 1; sampTextdrawCreate(t, "LD_SPAC:white", 240, 125); sampTextdrawSetLetterSizeAndColor(t, 0, 5.5, 0x80808080); sampTextdrawSetBoxColorAndSize(t, 1, 0xFF759DA3, 390, 0.0)
     
     local nextPos = -30.0;
     math.randomseed(os.time())
@@ -382,7 +381,7 @@ local function showCaptcha()
     for i = 0, 4 do
         nextPos = nextPos + 30
         t = t + 1
-        -- Сдвигаем цифры (внутри рамки) на 15 пикселей вправо
+        -- Координата цифр сдвинута на 15 пикселей
         local textX = 255 + nextPos 
         sampTextdrawCreate(t, "usebox", textX, 130)
         sampTextdrawSetLetterSizeAndColor(t, 0, 4.5, 0x80808080)
