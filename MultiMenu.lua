@@ -8,14 +8,13 @@ local vkeys = require "vkeys"
 local sampev = require 'lib.samp.events'
 local imgui = require 'mimgui'
 local encoding = require 'encoding'
+encoding.default = 'CP1251'
+local u8 = encoding.UTF8
 local inicfg = require 'inicfg'
 local ffi = require 'ffi'
 local requests = require 'requests'
 
 local dlstatus = require('moonloader').download_status
-
-encoding.default = 'CP1251'
-local u8 = encoding.UTF8
 
 local JSON_URL = "https://raw.githubusercontent.com/369miko/MultiMenu/main/MultiMenu.json"
 
