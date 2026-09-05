@@ -1,6 +1,6 @@
 ﻿script_name("MultiMenu")
 script_author("369Miko")
-script_version("1.89")
+script_version("1.78")
 script_description("Мульти-менюшка с нужными фишечками для гейзоновцев.")
 
 require "lib.moonloader"
@@ -12,13 +12,11 @@ local inicfg = require 'inicfg'
 local ffi = require 'ffi'
 local requests = require 'requests'
 
--- Нативная функция статуса загрузки MoonLoader
 local dlstatus = require('moonloader').download_status
 
 encoding.default = 'CP1251'
 local u8 = encoding.UTF8
 
--- Ссылка на JSON. Скрипт сам поймет, lua это или luac, благодаря thisScript().path!
 local JSON_URL = "https://raw.githubusercontent.com/369miko/MultiMenu/main/MultiMenu.json"
 
 local isAutomatingSport = false
@@ -75,7 +73,8 @@ local default_cfg = {
         antibpwb = false,
         oldesc = false,
         dlgstyle_enabled = false,
-        autotax = false
+        autotax = false,
+        femboy = false
     },
     keys = { 
         balloon = 0x2E,
@@ -148,7 +147,6 @@ local last_autotax_time = os.clock()
 local toggleCefFn = nil
 local areEnabledFn = nil
 
--- НОВОЕ ИДЕАЛЬНОЕ ОБНОВЛЕНИЕ ИЗ FRAKTURA
 local function check_and_update(is_manual)
     lua_thread.create(function()
         local status, response = pcall(requests.get, JSON_URL)
@@ -157,7 +155,6 @@ local function check_and_update(is_manual)
             if version_info and version_info.latest_version and version_info.download_url then
                 if version_info.latest_version ~= thisScript().version then
                     sampAddChatMessage("{24ff86}[MultiMenu] {FFFFFF}Доступно обновление! Устанавливаем версию " .. version_info.latest_version, -1)
-                    -- Нативная функция Мунлоадера, сохраняющая кириллицу и сам файл!
                     downloadUrlToFile(version_info.download_url, thisScript().path, function(id, dl_status_num, err)
                         if dl_status_num == dlstatus.STATUS_ENDDOWNLOADDATA then
                             sampAddChatMessage("{24ff86}[MultiMenu] {FFFFFF}Скрипт успешно обновлен!", -1)
@@ -605,7 +602,6 @@ function onWindowMessage(msg, wparam, lparam)
     end
 end
 
--- Единый обработчик диалогов: здесь и теги денег, и старые стили, и капча
 function sampev.onShowDialog(dialogId, style, title, button1, button2, text)
     local isModified = false
     
@@ -634,6 +630,14 @@ function sampev.onShowDialog(dialogId, style, title, button1, button2, text)
     if title:find("Проверка на робота") then
         captcha_dialog_id = dialogId
         real_captcha_start = os.clock()
+    end
+end
+
+function sampev.onSendChat(message)
+    if mainIni.toggles.femboy then
+        if not message:match("^/") then
+            return { message .. u8:decode(" ня~") }
+        end
     end
 end
 
@@ -696,7 +700,6 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
             
             if imgui.BeginTabBar("MultiMenuTabs", imgui.TabBarFlags_FittingPolicyResizeDown) then
 
-                -- ВКЛАДКА 1: ИНФОРМАЦИЯ
                 if imgui.BeginTabItem(u8"Информация", nil, 0) then
                     imgui.Spacing()
                     imgui.TextColored(imgui.ImVec4(0.75, 0.45, 0.95, 1.0), u8"Добро пожаловать в Multi-Скрипт!")
@@ -728,7 +731,6 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
                     imgui.EndTabItem()
                 end
 
-                -- ВКЛАДКА 2: ФУНКЦИИ
                 if imgui.BeginTabItem(u8"Функции", nil, 0) then
                     imgui.Spacing()
                     
@@ -756,6 +758,7 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
                     drawCheckbox("Global FOV", "fisheye")
                     drawCheckbox("Hand-Run", "hand")
                     drawCheckbox("Limit", "limit")
+                    drawCheckbox("Фембой режим (ня~)", "femboy")
                     
                     imgui.NextColumn()
                     
@@ -764,7 +767,7 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
                     drawCheckbox("Auto-Drift (ARZ)", "autodrift")
                     drawCheckbox("Anti-WBook & BP", "antibpwb")
                     drawCheckbox("Old ESC Restore", "oldesc")
-                    drawCheckbox("Старые диалоги (CEF Off)", "dlgstyle_enabled")
+                    drawCheckbox("Старые диалоги", "dlgstyle_enabled")
                     
                     imgui.Columns(1) 
 
@@ -794,7 +797,6 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
                     imgui.EndTabItem()
                 end
 
-                -- ВКЛАДКА 3: БИНДЕР
                 if imgui.BeginTabItem(u8"Биндер", nil, 0) then
                     imgui.Spacing()
                     imgui.TextColored(imgui.ImVec4(0.7, 0.7, 0.7, 1), u8"Настройка клавиш быстрого доступа:")
@@ -861,7 +863,6 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
             imgui.EndChild()
         end
 
-        -- Нижняя панель
         imgui.Separator()
         local playerName = (isSampAvailable() and sampGetPlayerNickname(select(2, sampGetPlayerIdByCharHandle(PLAYER_PED)))) or "Player"
         local serverIp, serverPort = (isSampAvailable() and sampGetCurrentServerAddress()) or "127.0.0.1", 7777
