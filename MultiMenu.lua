@@ -13,9 +13,6 @@ local ffi = require 'ffi'
 local requests = require('requests')
 local json = require('json')
 
-encoding.default = 'CP1251'
-local u8 = encoding.UTF8
-
 local JSON_URL = "https://raw.githubusercontent.com/369miko/MultiMenu/main/MultiMenu.json"
 local SCRIPT_FILENAME = "MultiMenu.lua"
 
