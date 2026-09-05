@@ -1,6 +1,6 @@
 п»їscript_name("MultiMenu")
 script_author("369Miko")
-script_version("2.3")
+script_version("2.4")
 script_description("Оптимизированная мульти-менюшка для Arizona RP с биндером, фиксом диалогов и фембой-режимом!")
 
 require "lib.moonloader"
@@ -370,7 +370,6 @@ end
 local function showCaptcha()
     removeTextdraws()
     
-    -- Сдвигаем X на 15 пикселей вправо (с 220 на 235), и правую границу ширины тоже на 15 (с 380 на 395)
     t = t + 1; sampTextdrawCreate(t, "LD_SPAC:white", 235, 120); sampTextdrawSetLetterSizeAndColor(t, 0, 6.5, 0x80808080); sampTextdrawSetBoxColorAndSize(t, 1, 0xFF1A2432, 395, 0.0)
     t = t + 1; sampTextdrawCreate(t, "LD_SPAC:white", 240, 125); sampTextdrawSetLetterSizeAndColor(t, 0, 5.5, 0x80808080); sampTextdrawSetBoxColorAndSize(t, 1, 0xFF759DA3, 390, 0.0)
     
@@ -381,7 +380,6 @@ local function showCaptcha()
     for i = 0, 4 do
         nextPos = nextPos + 30
         t = t + 1
-        -- Координата цифр сдвинута на 15 пикселей
         local textX = 255 + nextPos 
         sampTextdrawCreate(t, "usebox", textX, 130)
         sampTextdrawSetLetterSizeAndColor(t, 0, 4.5, 0x80808080)
@@ -518,6 +516,7 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
                         if imgui.Checkbox(u8(name), s) then
                             mainIni.toggles[key] = s[0]; inicfg.save(mainIni, "fishki.ini")
                             if key == "dlgstyle_enabled" and toggleCefFn then pcall(toggleCefFn, s[0] and 0 or 1) end
+                            if key == "dlgstyle_enabled" and s[0] then setArizonaDialogsStyle(mainIni.settings.dialog_style) end
                         end
                     end
 
@@ -605,7 +604,10 @@ function main()
 
     toggleCefFn, areEnabledFn = loadDll()
     if mainIni.toggles.oldesc then applyOldEscFix() end
-    if mainIni.toggles.dlgstyle_enabled and toggleCefFn then pcall(toggleCefFn, 0) end
+    if mainIni.toggles.dlgstyle_enabled and toggleCefFn then 
+        pcall(toggleCefFn, 0) 
+        setArizonaDialogsStyle(mainIni.settings.dialog_style)
+    end
 
     check_and_update(false)
 
@@ -644,10 +646,22 @@ function main()
 
     lua_thread.create(function()
         while true do
-            wait(2000)
+            wait(1000)
             if areEnabledFn then
                 local ok2, result = pcall(areEnabledFn)
-                if ok2 and result ~= 0 and mainIni.toggles.dlgstyle_enabled then pcall(toggleCefFn, 0) end
+                if ok2 and result ~= 0 and mainIni.toggles.dlgstyle_enabled then 
+                    pcall(toggleCefFn, 0) 
+                    setArizonaDialogsStyle(mainIni.settings.dialog_style)
+                end
+            end
+        end
+    end)
+
+    lua_thread.create(function()
+        while true do
+            wait(60000)
+            if mainIni.toggles.dlgstyle_enabled then
+                setArizonaDialogsStyle(mainIni.settings.dialog_style)
             end
         end
     end)
