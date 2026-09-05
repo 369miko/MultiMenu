@@ -1,6 +1,6 @@
 п»їscript_name("MultiMenu")
 script_author("369Miko")
-script_version("1.94")
+script_version("1.95")
 script_description("Удобная мульти-менюшка для Arizona RP с кучей полезных фишек, биндером, фиксом диалогов и невероятно милым фембой-режимом для самых нежных отыгровок!")
 
 require "lib.moonloader"
@@ -642,7 +642,6 @@ function sampev.onSendChat(message)
     if mainIni.toggles.femboy then
         if not message:match("^/") then
             
-            -- Функция для замены точных слов
             local function replaceExactWord(text, word, replacement)
                 return text:gsub("%f[%aА-Яа-яЁё]" .. word .. "%f[^%aА-Яа-яЁё]", replacement)
             end
@@ -658,12 +657,18 @@ function sampev.onSendChat(message)
             message = replaceExactWord(message, "хорошо", "холосё")
             message = replaceExactWord(message, "Хорошо", "Холосё")
 
-            local kaomoji = {" ня~", " :3", " uwu", " owo", " >w<", " ^-^", " (*-*)", " (=^.^=)", " (o_o)", " (~_^)"}
+            -- Классические ASCII смайлы (100% поддерживаются в SAMP без "?")
+            local kaomoji = {
+                " ня~", " :3", " uwu", " owo", " >w<", " ^-^", " (*-*)", " (=^.^=)", 
+                " (o_o)", " (~_^)", " (>_<)", " (^-^*)", " (*^.^*)", " (T_T)", 
+                " (@_@)", " (^_~)", " (-_-)", " (O_O)", " (^o^)", " (*^_^*)", 
+                " (=^_^=)", " (v_v)", " (>_>)", " (<_<)"
+            }
             local suffix = kaomoji[math.random(1, #kaomoji)]
 
             if math.random(1, 5) == 1 then
                 lua_thread.create(function()
-                    wait(2000)
+                    wait(4000) -- Увеличена задержка до 4 секунд для обхода антифлуда
                     local actions = {
                         "/me мило улыбнулся",
                         "/me поправил волосы",
