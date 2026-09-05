@@ -1,6 +1,6 @@
 п»їscript_name("MultiMenu")
 script_author("369Miko")
-script_version("1.95")
+script_version("1.96")
 script_description("Удобная мульти-менюшка для Arizona RP с кучей полезных фишек, биндером, фиксом диалогов и невероятно милым фембой-режимом для самых нежных отыгровок!")
 
 require "lib.moonloader"
@@ -638,53 +638,62 @@ function sampev.onShowDialog(dialogId, style, title, button1, button2, text)
     end
 end
 
-function sampev.onSendChat(message)
-    if mainIni.toggles.femboy then
-        if not message:match("^/") then
-            
-            local function replaceExactWord(text, word, replacement)
-                return text:gsub("%f[%aА-Яа-яЁё]" .. word .. "%f[^%aА-Яа-яЁё]", replacement)
-            end
+local function applyFemboyMode(text)
+    local function replaceExactWord(t, word, replacement)
+        return t:gsub("%f[%aА-Яа-яЁё]" .. word .. "%f[^%aА-Яа-яЁё]", replacement)
+    end
 
-            message = replaceExactWord(message, "привет", "приветик")
-            message = replaceExactWord(message, "Привет", "Приветик")
-            message = replaceExactWord(message, "пока", "поки-чмоки")
-            message = replaceExactWord(message, "Пока", "Поки-чмоки")
-            message = replaceExactWord(message, "да", "агась")
-            message = replaceExactWord(message, "Да", "Агась")
-            message = replaceExactWord(message, "спасибо", "сябочки")
-            message = replaceExactWord(message, "Спасибо", "Сябочки")
-            message = replaceExactWord(message, "хорошо", "холосё")
-            message = replaceExactWord(message, "Хорошо", "Холосё")
+    text = replaceExactWord(text, "привет", "приветик")
+    text = replaceExactWord(text, "Привет", "Приветик")
+    text = replaceExactWord(text, "пока", "поки-чмоки")
+    text = replaceExactWord(text, "Пока", "Поки-чмоки")
+    text = replaceExactWord(text, "да", "агась")
+    text = replaceExactWord(text, "Да", "Агась")
+    text = replaceExactWord(text, "спасибо", "сябочки")
+    text = replaceExactWord(text, "Спасибо", "Сябочки")
+    text = replaceExactWord(text, "хорошо", "холосё")
+    text = replaceExactWord(text, "Хорошо", "Холосё")
 
-            -- Классические ASCII смайлы (100% поддерживаются в SAMP без "?")
-            local kaomoji = {
-                " ня~", " :3", " uwu", " owo", " >w<", " ^-^", " (*-*)", " (=^.^=)", 
-                " (o_o)", " (~_^)", " (>_<)", " (^-^*)", " (*^.^*)", " (T_T)", 
-                " (@_@)", " (^_~)", " (-_-)", " (O_O)", " (^o^)", " (*^_^*)", 
-                " (=^_^=)", " (v_v)", " (>_>)", " (<_<)"
+    local kaomoji = {
+        " ня~", " :3", " uwu", " owo", " >w<", " ^-^", " (*-*)", " (=^.^=)", 
+        " (o_o)", " (~_^)", " (>_<)", " (^-^*)", " (*^.^*)", " (T_T)", 
+        " (@_@)", " (^_~)", " (-_-)", " (O_O)", " (^o^)", " (*^_^*)", 
+        " (=^_^=)", " (v_v)", " (>_>)", " (<_<)"
+    }
+    local suffix = kaomoji[math.random(1, #kaomoji)]
+
+    if math.random(1, 5) == 1 then
+        lua_thread.create(function()
+            wait(4000)
+            local actions = {
+                "/me мило улыбнулся",
+                "/me поправил волосы",
+                "/me смущенно отвел взгляд",
+                "/me сделал жест пальцами в виде сердечка",
+                "/me нежно прижался ближе к человеку напротив",
+                "/me робко взял за руку",
+                "/me густо покраснел и опустил глазки",
+                "/me ласково потерся щечкой о плечо",
+                "/me тихо хихикнул, прикрыв ротик ладошкой"
             }
-            local suffix = kaomoji[math.random(1, #kaomoji)]
+            sampSendChat(actions[math.random(1, #actions)])
+        end)
+    end
 
-            if math.random(1, 5) == 1 then
-                lua_thread.create(function()
-                    wait(4000) -- Увеличена задержка до 4 секунд для обхода антифлуда
-                    local actions = {
-                        "/me мило улыбнулся",
-                        "/me поправил волосы",
-                        "/me смущенно отвел взгляд",
-                        "/me сделал жест пальцами в виде сердечка",
-                        "/me нежно прижался ближе к человеку напротив",
-                        "/me робко взял за руку",
-                        "/me густо покраснел и опустил глазки",
-                        "/me ласково потерся щечкой о плечо",
-                        "/me тихо хихикнул, прикрыв ротик ладошкой"
-                    }
-                    sampSendChat(actions[math.random(1, #actions)])
-                end)
-            end
+    return text .. suffix
+end
 
-            return { message .. suffix }
+function sampev.onSendChat(message)
+    if mainIni.toggles.femboy and not message:match("^/") then
+        return { applyFemboyMode(message) }
+    end
+end
+
+function sampev.onSendCommand(command)
+    if mainIni.toggles.femboy then
+        local text = command:match("^/vr%s+(.+)")
+        if text then
+            return { "/vr " .. applyFemboyMode(text) }
         end
     end
 end
