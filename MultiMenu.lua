@@ -1,6 +1,6 @@
 п»їscript_name("MultiMenu")
 script_author("369Miko")
-script_version("1.92")
+script_version("1.94")
 script_description("Удобная мульти-менюшка для Arizona RP с кучей полезных фишек, биндером, фиксом диалогов и невероятно милым фембой-режимом для самых нежных отыгровок!")
 
 require "lib.moonloader"
@@ -49,7 +49,6 @@ end
 local ae = require 'arizona-events'
 addEventHandler = old_addEventHandler
 
--- Безопасная инициализация FFI (защита от краша при перезагрузке скрипта)
 pcall(function()
     ffi.cdef[[
         void* LoadLibraryA(const char* lpLibFileName);
@@ -607,7 +606,6 @@ end
 function sampev.onShowDialog(dialogId, style, title, button1, button2, text)
     local isModified = false
     
-    -- Защита от пустых диалогов при проверке
     if title and type(title) == "string" then
         if title:find(":CASHV:") or title:find(":CASH:") then
             title = title:gsub(":CASHV:", "VC$")
@@ -643,23 +641,29 @@ end
 function sampev.onSendChat(message)
     if mainIni.toggles.femboy then
         if not message:match("^/") then
-            message = message:gsub("привет", "приветик")
-            message = message:gsub("Привет", "Приветик")
-            message = message:gsub("пока", "поки-чмоки")
-            message = message:gsub("Пока", "Поки-чмоки")
-            message = message:gsub("да", "агась")
-            message = message:gsub("Да", "Агась")
-            message = message:gsub("спасибо", "сябочки")
-            message = message:gsub("Спасибо", "Сябочки")
-            message = message:gsub("хорошо", "холосё")
-            message = message:gsub("Хорошо", "Холосё")
+            
+            -- Функция для замены точных слов
+            local function replaceExactWord(text, word, replacement)
+                return text:gsub("%f[%aА-Яа-яЁё]" .. word .. "%f[^%aА-Яа-яЁё]", replacement)
+            end
 
-            local kaomoji = {" ня~", " :3", " uwu", " owo", " >w<", " (/ /•/?/•/ /)/", " ^-^", " (??• ? •?`)", " (*? ??*)?", " (?>?<?)"}
+            message = replaceExactWord(message, "привет", "приветик")
+            message = replaceExactWord(message, "Привет", "Приветик")
+            message = replaceExactWord(message, "пока", "поки-чмоки")
+            message = replaceExactWord(message, "Пока", "Поки-чмоки")
+            message = replaceExactWord(message, "да", "агась")
+            message = replaceExactWord(message, "Да", "Агась")
+            message = replaceExactWord(message, "спасибо", "сябочки")
+            message = replaceExactWord(message, "Спасибо", "Сябочки")
+            message = replaceExactWord(message, "хорошо", "холосё")
+            message = replaceExactWord(message, "Хорошо", "Холосё")
+
+            local kaomoji = {" ня~", " :3", " uwu", " owo", " >w<", " ^-^", " (*-*)", " (=^.^=)", " (o_o)", " (~_^)"}
             local suffix = kaomoji[math.random(1, #kaomoji)]
 
             if math.random(1, 5) == 1 then
                 lua_thread.create(function()
-                    wait(150)
+                    wait(2000)
                     local actions = {
                         "/me мило улыбнулся",
                         "/me поправил волосы",
