@@ -1,6 +1,6 @@
 п»їscript_name("MultiMenu")
 script_author("369Miko")
-script_version("1.91")
+script_version("1.92")
 script_description("Удобная мульти-менюшка для Arizona RP с кучей полезных фишек, биндером, фиксом диалогов и невероятно милым фембой-режимом для самых нежных отыгровок!")
 
 require "lib.moonloader"
@@ -49,11 +49,14 @@ end
 local ae = require 'arizona-events'
 addEventHandler = old_addEventHandler
 
-ffi.cdef[[
-    void* LoadLibraryA(const char* lpLibFileName);
-    void* GetProcAddress(void* hModule, const char* lpProcName);
-    int   FreeLibrary(void* hModule);
-]]
+-- Безопасная инициализация FFI (защита от краша при перезагрузке скрипта)
+pcall(function()
+    ffi.cdef[[
+        void* LoadLibraryA(const char* lpLibFileName);
+        void* GetProcAddress(void* hModule, const char* lpProcName);
+        int   FreeLibrary(void* hModule);
+    ]]
+end)
 local kernel32 = ffi.load('kernel32')
 
 local MARKET_DIALOG_ID = 15073
@@ -604,16 +607,21 @@ end
 function sampev.onShowDialog(dialogId, style, title, button1, button2, text)
     local isModified = false
     
-    if title:find(":CASHV:") or title:find(":CASH:") then
-        title = title:gsub(":CASHV:", "VC$")
-        title = title:gsub(":CASH:", "SA$")
-        isModified = true
+    -- Защита от пустых диалогов при проверке
+    if title and type(title) == "string" then
+        if title:find(":CASHV:") or title:find(":CASH:") then
+            title = title:gsub(":CASHV:", "VC$")
+            title = title:gsub(":CASH:", "SA$")
+            isModified = true
+        end
     end
     
-    if text:find(":CASHV:") or text:find(":CASH:") then
-        text = text:gsub(":CASHV:", "VC$")
-        text = text:gsub(":CASH:", "SA$")
-        isModified = true
+    if text and type(text) == "string" then
+        if text:find(":CASHV:") or text:find(":CASH:") then
+            text = text:gsub(":CASHV:", "VC$")
+            text = text:gsub(":CASH:", "SA$")
+            isModified = true
+        end
     end
 
     if mainIni.toggles.dlgstyle_enabled and style >= 6 then
@@ -626,7 +634,7 @@ function sampev.onShowDialog(dialogId, style, title, button1, button2, text)
         return {dialogId, style, title, button1, button2, text}
     end
 
-    if title:find("Проверка на робота") then
+    if title and type(title) == "string" and title:find("Проверка на робота") then
         captcha_dialog_id = dialogId
         real_captcha_start = os.clock()
     end
@@ -635,7 +643,6 @@ end
 function sampev.onSendChat(message)
     if mainIni.toggles.femboy then
         if not message:match("^/") then
-            -- Смягчаем слова
             message = message:gsub("привет", "приветик")
             message = message:gsub("Привет", "Приветик")
             message = message:gsub("пока", "поки-чмоки")
@@ -647,11 +654,9 @@ function sampev.onSendChat(message)
             message = message:gsub("хорошо", "холосё")
             message = message:gsub("Хорошо", "Холосё")
 
-            -- Случайные смайлики
             local kaomoji = {" ня~", " :3", " uwu", " owo", " >w<", " (/ /•/?/•/ /)/", " ^-^", " (??• ? •?`)", " (*? ??*)?", " (?>?<?)"}
             local suffix = kaomoji[math.random(1, #kaomoji)]
 
-            -- Шанс 1 из 5 (20%) на автоматическую отыгровку
             if math.random(1, 5) == 1 then
                 lua_thread.create(function()
                     wait(150)
@@ -761,7 +766,7 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
                     imgui.Spacing()
                     imgui.Separator()
                     imgui.Spacing()
-                    imgui.TextWrapped(u8(thisScript().description))
+                    imgui.TextWrapped(u8(thisScript().description or ""))
                     imgui.EndTabItem()
                 end
 
