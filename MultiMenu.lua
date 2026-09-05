@@ -1,6 +1,6 @@
 п»їscript_name("MultiMenu")
 script_author("369Miko")
-script_version("1.85")
+script_version("1.86")
 script_description("Мульти-менюшка с нужными фишечками для гейзоновцев.")
 
 require "lib.moonloader"
