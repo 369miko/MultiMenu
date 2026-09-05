@@ -10,12 +10,9 @@ local imgui = require 'mimgui'
 local encoding = require 'encoding'
 local inicfg = require 'inicfg'
 local ffi = require 'ffi'
-local requests = require('requests')
-local json = require('json')
 
--- Ссылки для автообновления (.luac)
-local JSON_URL = "https://raw.githubusercontent.com/369miko/MultiMenu/main/MultiMenu.json"
-local SCRIPT_FILENAME = "MultiMenu.lua"
+encoding.default = 'CP1251'
+local u8 = encoding.UTF8
 
 local isAutomatingSport = false
 local isAutomatingDrift = false
@@ -144,42 +141,6 @@ local last_autotax_time = os.clock()
 local toggleCefFn = nil
 local areEnabledFn = nil
 
--- Функция проверки и загрузки обновлений (.luac)
-local function check_and_update(is_manual)
-    lua_thread.create(function()
-        local status, response = pcall(requests.get, JSON_URL)
-        if status and response and response.status_code == 200 then
-            local ok, version_info = pcall(json.decode, response.text)
-            if ok and version_info and version_info.latest_version and version_info.download_url then
-                if version_info.latest_version ~= thisScript().version then
-                    sampAddChatMessage("{24ff86}[MultiMenu] {FFFFFF}Доступно обновление! Устанавливаем версию " .. version_info.latest_version, -1)
-                    local dl_status, dl_resp = pcall(requests.get, version_info.download_url)
-                    if dl_status and dl_resp and dl_resp.status_code == 200 then
-                        local file = io.open("moonloader\\" .. SCRIPT_FILENAME, "wb")
-                        if file then
-                            file:write(dl_resp.content)
-                            file:close()
-                            sampAddChatMessage("{24ff86}[MultiMenu] {FFFFFF}Успешно! Была установлена новая версия. Перезапустите скрипт (/reload).", -1)
-                        else
-                            sampAddChatMessage("{FF6060}[MultiMenu] Ошибка: не удалось записать файл скрипта.", -1)
-                        end
-                    else
-                        sampAddChatMessage("{FF6060}[MultiMenu] Ошибка скачивания файла обновления.", -1)
-                    end
-                else
-                    if is_manual then
-                        sampAddChatMessage("{24ff86}[MultiMenu] {FFFFFF}У вас установлена самая новая версия скрипта.", -1)
-                    end
-                end
-            else
-                if is_manual then sampAddChatMessage("{FF6060}[MultiMenu] Ошибка чтения данных из JSON.", -1) end
-            end
-        else
-            if is_manual then sampAddChatMessage("{FF6060}[MultiMenu] Не удалось подключиться к серверу обновлений.", -1) end
-        end
-    end)
-end
-
 local function loadDll()
     local hDll = kernel32.LoadLibraryA('vorbisFile.dll')
     if hDll == nil or hDll == ffi.cast('void*', 0) then return nil, nil end
@@ -188,41 +149,6 @@ local function loadDll()
     if fnToggle == nil or fnToggle == ffi.cast('void*', 0) then return nil, nil end
     if fnAreEnabled == nil or fnAreEnabled == ffi.cast('void*', 0) then return nil, nil end
     return ffi.cast('void(__cdecl*)(int)', fnToggle), ffi.cast('int(__cdecl*)(void)', fnAreEnabled)
-end
-
-local function format_with_dots(num)
-    num = math.floor(tonumber(num) or 0)
-    local s = tostring(num)
-    local rev = s:reverse():gsub("(%d%d%d)", "%1.")
-    s = rev:reverse()
-    if s:sub(1, 1) == "." then s = s:sub(2) end
-    return s
-end
-
-local function parse_k_value(str)
-    str = tostring(str or "")
-    str = str:gsub("%.", "")
-    return tonumber(str) or 0
-end
-
-local function build_money(m, kk, k)
-    local total = 0
-    if m then total = total + (tonumber(m) or 0) * 1000000000 end
-    if kk then total = total + (tonumber(kk) or 0) * 1000000 end
-    if k then total = total + parse_k_value(k) end
-    return format_with_dots(total)
-end
-
-local function convert_money_tags(text)
-    if type(text) ~= "string" or text == "" then return text end
-    text = text:gsub(":M:%s*(%d+)%s*:KK:%s*(%d+)%s*:K:%s*([%d%.]+)", function(m, kk, k) return build_money(m, kk, k) end)
-    text = text:gsub(":M:%s*(%d+)%s*:KK:%s*(%d+)", function(m, kk) return build_money(m, kk, nil) end)
-    text = text:gsub(":M:%s*(%d+)%s*:K:%s*([%d%.]+)", function(m, k) return build_money(m, nil, k) end)
-    text = text:gsub(":KK:%s*(%d+)%s*:K:%s*([%d%.]+)", function(kk, k) return build_money(nil, kk, k) end)
-    text = text:gsub(":M:%s*(%d+)", function(m) return build_money(m, nil, nil) end)
-    text = text:gsub(":KK:%s*(%d+)", function(kk) return build_money(nil, kk, nil) end)
-    text = text:gsub(":K:%s*([%d%.]+)", function(k) return build_money(nil, nil, k) end)
-    return text
 end
 
 local FIX_JS = [[
@@ -642,22 +568,32 @@ function onWindowMessage(msg, wparam, lparam)
     end
 end
 
-function sampev.onShowDialog(id, style, title, button1, button2, text)
-    if mainIni.toggles.dlgstyle_enabled and style >= 6 then
-        title = convert_money_tags(title)
-        text = convert_money_tags(text)
-        local newStyle = 1
-        if id == MARKET_DIALOG_ID then newStyle = 5 end
-        return {id, newStyle, title, button1, button2, text}
+-- Интегрирован чистый фикс для тегов :CASHV: и :CASH:[cite: 1]
+function sampev.onShowDialog(dialogId, style, title, button1, button2, text)
+    local isModified = false
+    
+    if title:find(":CASHV:") or title:find(":CASH:") then
+        title = title:gsub(":CASHV:", "VC$")
+        title = title:gsub(":CASH:", "SA$")
+        isModified = true
+    end
+    
+    if text:find(":CASHV:") or text:find(":CASH:") then
+        text = text:gsub(":CASHV:", "VC$")
+        text = text:gsub(":CASH:", "SA$")
+        isModified = true
+    end
+    
+    if isModified then
+        return {dialogId, style, title, button1, button2, text}
     end
 
     if title:find("Проверка на робота") then
-        captcha_dialog_id = id
+        captcha_dialog_id = dialogId
         real_captcha_start = os.clock()
     end
 end
 
--- Фиолетовая полупрозрачная тема оформления интерфейса
 imgui.OnInitialize(function()
     local style = imgui.GetStyle()
     local colors = style.Colors
@@ -728,12 +664,6 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
                     imgui.Text(u8"Скрипт создал: 369Miko")
                     imgui.Text(u8"Обратная связь: dc 369miko")
                     imgui.Spacing()
-                    
-                    if imgui.Button(u8"Проверить обновление", imgui.ImVec2(-1, 24)) then
-                        check_and_update(true)
-                    end
-                    
-                    imgui.Spacing()
                     imgui.Separator()
                     imgui.Spacing()
                     imgui.TextColored(imgui.ImVec4(0.85, 0.75, 0.95, 1.0), u8"Команды скрипта:")
@@ -745,7 +675,7 @@ imgui.OnFrame(function() return renderWindow[0] end, function(player)
                     imgui.Spacing()
                     imgui.Separator()
                     imgui.Spacing()
-                    imgui.TextWrapped(u8"Инструкция: Зайдите во вкладку 'Информация' и нажмите кнопку 'Проверить обновление', чтобы обновиться до самой свежей версии.")
+                    imgui.TextWrapped(u8"Описание: Удобный мульти-инструмент для Arizona RP, включающий в себя полезные вспомогательные фишки, настройку интерфейса, автоматизацию и тренировку капчи.")
                     imgui.EndTabItem()
                 end
 
@@ -910,9 +840,6 @@ function main()
     if mainIni.toggles.dlgstyle_enabled and toggleCefFn then
         pcall(function() toggleCefFn(0) end)
     end
-
-    -- Автоматическая проверка обновлений при запуске игры
-    check_and_update(false)
 
     sampRegisterChatCommand("fmenu", function() menu_show = not menu_show end)
     sampRegisterChatCommand("w", function() lua_thread.create(doPayTaxes) end)
