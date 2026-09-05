@@ -1,6 +1,6 @@
 п»їscript_name("MultiMenu")
 script_author("369Miko")
-script_version("1.99")
+script_version("2.1")
 script_description("Оптимизированная мульти-менюшка для Arizona RP с биндером, фиксом диалогов и фембой-режимом!")
 
 require "lib.moonloader"
@@ -307,16 +307,33 @@ ae.onArizonaSendKey = function(packet)
     if (isAutomatingSport or isAutomatingDrift) and packet.key == 82 and not scriptKeyAction then return false end
 end
 
-local function getFullKeyName(k, m)
-    if k == 0 or k == nil then return "Нет" end
-    local name = vkeys.id_to_name(k)
-    name = name and name:gsub("VK_", "") or tostring(k)
-    return (m and m ~= 0) and (vkeys.id_to_name(m):gsub("VK_", "") .. " + " .. name) or name
+-- Глобальные функции биндера
+function getKeyName(id)
+    if id == 0 or id == nil then return "Нет" end
+    local name = vkeys.id_to_name(id)
+    if name then return name:gsub("VK_", "") else return tostring(id) end
 end
 
-local function checkBindDown(k, m)
+function getFullKeyName(k, m)
+    if k == 0 or k == nil then return "Нет" end
+    local kname = getKeyName(k)
+    if m and m ~= 0 then return getKeyName(m) .. " + " .. kname end
+    return kname
+end
+
+function checkBind(k, m)
     if k == 0 or k == nil then return false end
-    if m and m ~= 0 and not isKeyDown(m) then return false end
+    if m and m ~= 0 then
+        if not isKeyDown(m) then return false end
+    end
+    return wasKeyPressed(k)
+end
+
+function checkBindDown(k, m)
+    if k == 0 or k == nil then return false end
+    if m and m ~= 0 then
+        if not isKeyDown(m) then return false end
+    end
     return isKeyDown(k)
 end
 
@@ -353,9 +370,10 @@ end
 
 local function showCaptcha()
     removeTextdraws()
-    local cX = 250 -- Сдвинуто вправо на 30 пикселей для центрирования
-    t = t + 1; sampTextdrawCreate(t, "LD_SPAC:white", cX, 120); sampTextdrawSetLetterSizeAndColor(t, 0, 6.5, 0x80808080); sampTextdrawSetBoxColorAndSize(t, 1, 0xFF1A2432, 380, 0.0)
-    t = t + 1; sampTextdrawCreate(t, "LD_SPAC:white", cX + 5, 125); sampTextdrawSetLetterSizeAndColor(t, 0, 5.5, 0x80808080); sampTextdrawSetBoxColorAndSize(t, 1, 0xFF759DA3, 375, 0.0)
+    
+    -- Фоновая панель на стандартном месте
+    t = t + 1; sampTextdrawCreate(t, "LD_SPAC:white", 220, 120); sampTextdrawSetLetterSizeAndColor(t, 0, 6.5, 0x80808080); sampTextdrawSetBoxColorAndSize(t, 1, 0xFF1A2432, 380, 0.0)
+    t = t + 1; sampTextdrawCreate(t, "LD_SPAC:white", 225, 125); sampTextdrawSetLetterSizeAndColor(t, 0, 5.5, 0x80808080); sampTextdrawSetBoxColorAndSize(t, 1, 0xFF759DA3, 375, 0.0)
     
     local nextPos = -30.0;
     math.randomseed(os.time())
@@ -364,11 +382,13 @@ local function showCaptcha()
     for i = 0, 4 do
         nextPos = nextPos + 30
         t = t + 1
-        sampTextdrawCreate(t, "usebox", cX + 20 + nextPos, 130)
+        -- Сдвигаем цифры (внутри рамки) на 15 пикселей вправо
+        local textX = 255 + nextPos 
+        sampTextdrawCreate(t, "usebox", textX, 130)
         sampTextdrawSetLetterSizeAndColor(t, 0, 4.5, 0x80808080)
         sampTextdrawSetBoxColorAndSize(t, 1, 0xFF1A2432, 30, 25.0)
         sampTextdrawSetAlign(t, 2)
-        if i < 4 then GenerateTextDraw(captchaTable[i + 1], cX + 20 + nextPos, 130) else GenerateTextDraw(0, cX + 20 + nextPos, 130) end
+        if i < 4 then GenerateTextDraw(captchaTable[i + 1], textX, 130) else GenerateTextDraw(0, textX, 130) end
     end
     captchaTable = {}
     
