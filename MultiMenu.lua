@@ -1,6 +1,6 @@
 ﻿script_name("MultiMenu")
 script_author("369Miko")
-script_version("1.88")
+script_version("1.77")
 script_description("Мульти-менюшка с нужными фишечками для гейзоновцев.")
 
 require "lib.moonloader"
@@ -10,11 +10,16 @@ local imgui = require 'mimgui'
 local encoding = require 'encoding'
 local inicfg = require 'inicfg'
 local ffi = require 'ffi'
-local requests = require('requests')
-local json = require('json')
+local requests = require 'requests'
 
+-- Нативная функция статуса загрузки MoonLoader
+local dlstatus = require('moonloader').download_status
+
+encoding.default = 'CP1251'
+local u8 = encoding.UTF8
+
+-- Ссылка на JSON. Скрипт сам поймет, lua это или luac, благодаря thisScript().path!
 local JSON_URL = "https://raw.githubusercontent.com/369miko/MultiMenu/main/MultiMenu.json"
-local SCRIPT_FILENAME = "MultiMenu.lua"
 
 local isAutomatingSport = false
 local isAutomatingDrift = false
@@ -143,27 +148,22 @@ local last_autotax_time = os.clock()
 local toggleCefFn = nil
 local areEnabledFn = nil
 
+-- НОВОЕ ИДЕАЛЬНОЕ ОБНОВЛЕНИЕ ИЗ FRAKTURA
 local function check_and_update(is_manual)
     lua_thread.create(function()
         local status, response = pcall(requests.get, JSON_URL)
         if status and response and response.status_code == 200 then
-            local ok, version_info = pcall(json.decode, response.text)
-            if ok and version_info and version_info.latest_version and version_info.download_url then
+            local version_info = decodeJson(response.text)
+            if version_info and version_info.latest_version and version_info.download_url then
                 if version_info.latest_version ~= thisScript().version then
                     sampAddChatMessage("{24ff86}[MultiMenu] {FFFFFF}Доступно обновление! Устанавливаем версию " .. version_info.latest_version, -1)
-                    local dl_status, dl_resp = pcall(requests.get, version_info.download_url)
-                    if dl_status and dl_resp and dl_resp.status_code == 200 then
-                        local file = io.open("moonloader\\" .. SCRIPT_FILENAME, "wb")
-                        if file then
-                            file:write(dl_resp.content or dl_resp.text)
-                            file:close()
-                            sampAddChatMessage("{24ff86}[MultiMenu] {FFFFFF}Успешно! Была установлена новая версия. Перезапустите скрипт (/reload).", -1)
-                        else
-                            sampAddChatMessage("{FF6060}[MultiMenu] Ошибка: не удалось записать файл скрипта.", -1)
+                    -- Нативная функция Мунлоадера, сохраняющая кириллицу и сам файл!
+                    downloadUrlToFile(version_info.download_url, thisScript().path, function(id, dl_status_num, err)
+                        if dl_status_num == dlstatus.STATUS_ENDDOWNLOADDATA then
+                            sampAddChatMessage("{24ff86}[MultiMenu] {FFFFFF}Скрипт успешно обновлен!", -1)
+                            thisScript():reload()
                         end
-                    else
-                        sampAddChatMessage("{FF6060}[MultiMenu] Ошибка скачивания файла обновления.", -1)
-                    end
+                    end)
                 else
                     if is_manual then
                         sampAddChatMessage("{24ff86}[MultiMenu] {FFFFFF}У вас установлена самая новая версия скрипта.", -1)
@@ -609,7 +609,6 @@ end
 function sampev.onShowDialog(dialogId, style, title, button1, button2, text)
     local isModified = false
     
-    -- 1. Твой нормальный фикс для денег
     if title:find(":CASHV:") or title:find(":CASH:") then
         title = title:gsub(":CASHV:", "VC$")
         title = title:gsub(":CASH:", "SA$")
@@ -622,7 +621,6 @@ function sampev.onShowDialog(dialogId, style, title, button1, button2, text)
         isModified = true
     end
 
-    -- 2. Конвертация стилей диалогов (если включено в настройках)
     if mainIni.toggles.dlgstyle_enabled and style >= 6 then
         style = 1
         if dialogId == MARKET_DIALOG_ID then style = 5 end
