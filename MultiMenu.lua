@@ -1,6 +1,6 @@
 п»їscript_name("MultiMenu")
 script_author("369Miko")
-script_version("2.11")
+script_version("2.13")
 script_description("Масштабный хелпер: биндер, фикс CEF диалогов, фембой-режим с авто-отыгровками, умный авто-дрифт, индикатор стамины, скрытие UI дрифта и асинхронная авто-оплата всех налогов (вкл. фам. квартиру).")
 
 require "lib.moonloader"
@@ -93,7 +93,6 @@ local clickerState, isWaitingForSpawn, fisheyeLocked, limitWasDown = false, fals
 local bindWaiting, active67 = nil, false
 local stamina_pos = {x = 0, y = 0}
 
--- Состояния авто-оплаты
 local taxState = 0
 local taxTimeout = 0
 
@@ -106,9 +105,43 @@ local captcha_dialog_id, real_captcha_start = nil, 0
 local last_esc_time, last_autotax_time = os.clock(), os.clock()
 local toggleCefFn, areEnabledFn = nil, nil
 
-local femboy_dict = { ["привет"]="приветик", ["Привет"]="Приветик", ["пока"]="поки-чмоки", ["Пока"]="Поки-чмоки", ["да"]="агась", ["Да"]="Агась", ["спасибо"]="сябочки", ["Спасибо"]="Сябочки", ["хорошо"]="холосё", ["Хорошо"]="Холосё" }
-local femboy_kaomoji = { " ня~", " :3", " uwu", " owo", " >w<", " ^-^", " =w=", " >///<", " ;3", " ^.^", " (* ^ w ^)", " (*>_<*)", " (^_-)", " =///=", " (*-*)", " (o_o)", " (~_^)", " (^-^*)", " (*^.^*)", " (T_T)", " (@_@)", " (^_~)", " (O_O)", " (^o^)", " (v_v)", " (>_>)", " (<_<)" }
-local femboy_actions = { "/me мило улыбнулся", "/me поправил волосы", "/me смущенно отвел взгляд", "/me сделал жест пальцами в виде сердечка", "/me нежно прижался ближе к человеку напротив", "/me робко взял за руку", "/me густо покраснел и опустил глазки", "/me ласково потерся щечкой о плечо", "/me тихо хихикнул, прикрыв ротик ладошкой", "/me мило наклонил голову вбок", "/me застенчиво прячет лицо в ладошках", "/me посмотрел снизу вверх блестящими глазками", "/me смущенно заправил прядь волос за ушко", "/me уткнулся носиком в грудь собеседника", "/me нежно обвил руками шею", "/me тихонько чмокнул в щечку", "/me крепко прижался, закрыв глазки от удовольствия", "/me робко прикусил нижнюю губу", "/me игриво подмигнул и улыбнулся" }
+-- Разбито на несколько строк, чтобы не обрезалось при копировании
+local femboy_dict = { 
+    ["привет"]="приветик", ["Привет"]="Приветик", 
+    ["пока"]="поки-чмоки", ["Пока"]="Поки-чмоки", 
+    ["да"]="агась", ["Да"]="Агась", 
+    ["спасибо"]="сябочки", ["Спасибо"]="Сябочки", 
+    ["хорошо"]="холосё", ["Хорошо"]="Холосё" 
+}
+
+local femboy_kaomoji = { 
+    " ня~", " :3", " uwu", " owo", " >w<", " ^-^", " =w=", " >///<", " ;3", 
+    " ^.^", " (* ^ w ^)", " (*>_<*)", " (^_-)", " =///=", " (*-*)", 
+    " (o_o)", " (~_^)", " (^-^*)", " (*^.^*)", " (T_T)", " (@_@)", 
+    " (^_~)", " (O_O)", " (^o^)", " (v_v)", " (>_>)", " (<_<)" 
+}
+
+local femboy_actions = { 
+    "/me мило улыбнулся", 
+    "/me поправил волосы", 
+    "/me смущенно отвел взгляд", 
+    "/me сделал жест пальцами в виде сердечка", 
+    "/me нежно прижался ближе к человеку напротив", 
+    "/me робко взял за руку", 
+    "/me густо покраснел и опустил глазки", 
+    "/me ласково потерся щечкой о плечо", 
+    "/me тихо хихикнул, прикрыв ротик ладошкой", 
+    "/me мило наклонил голову вбок", 
+    "/me застенчиво прячет лицо в ладошках", 
+    "/me посмотрел снизу вверх блестящими глазками", 
+    "/me смущенно заправил прядь волос за ушко", 
+    "/me уткнулся носиком в грудь собеседника", 
+    "/me нежно обвил руками шею", 
+    "/me тихонько чмокнул в щечку", 
+    "/me крепко прижался, закрыв глазки от удовольствия", 
+    "/me робко прикусил нижнюю губу", 
+    "/me игриво подмигнул и улыбнулся" 
+}
 
 local function check_and_update(is_manual)
     lua_thread.create(function()
@@ -142,7 +175,17 @@ local function loadDll()
     return ffi.cast('void(__cdecl*)(int)', fnToggle), ffi.cast('int(__cdecl*)(void)', fnAreEnabled)
 end
 
-local FIX_JS = "try { if (window && window.cef && typeof window.cef.HandleGameMenu === 'function') { window.cef.HandleGameMenu(false); } if (typeof window.executeEvent === 'function') { window.executeEvent('event.mainMenu.setMainMenuDisabled', `[true]`); } } catch (e) {}"
+-- Переведено в многострочный формат для защиты от обрезания строки
+local FIX_JS = [[
+try {
+  if (window && window.cef && typeof window.cef.HandleGameMenu === 'function') {
+    window.cef.HandleGameMenu(false);
+  }
+  if (typeof window.executeEvent === 'function') {
+    window.executeEvent('event.mainMenu.setMainMenuDisabled', `[true]`);
+  }
+} catch (e) {}
+]]
 
 local function evalcef(code, encoded)
     local bs = raknetNewBitStream()
@@ -183,7 +226,6 @@ function setArizonaDialogsStyle(style)
     raknetDeleteBitStream(bs)
 end
 
--- Асинхронный запуск автооплаты
 function doPayTaxes()
     if taxState > 0 then return end
     sampAddChatMessage("{24ff86}[MultiTool] {FFFFFF}Начинаю автооплату налогов...", -1)
@@ -207,7 +249,6 @@ ae.onArizonaDisplay = function(packet)
             for _, item in ipairs(items) do
                 local title = (item.title or ""):lower()
                 
-                -- Умная проверка на статус
                 if isAutomatingSport then
                     if title:find("sport") or title:find(u8:encode("спорт")) then
                         if title:find(u8:encode("выкл")) or title:find(u8:encode("снять")) then cancelId = item.id or item.uid
@@ -335,7 +376,6 @@ function onWindowMessage(msg, wparam, lparam)
     end
 end
 
--- Асинхронная обработка диалогов для оплаты налогов и фикса стилей
 function sampev.onShowDialog(dialogId, style, title, button1, button2, text)
     local isModified = false
     local t_lower = (title and type(title) == "string") and title:lower() or ""
@@ -679,7 +719,6 @@ function main()
     while true do
         wait(0)
         
-        -- Тайм-аут для автооплаты (защита от зависаний)
         if taxState > 0 and os.clock() > taxTimeout then
             sampAddChatMessage("{FF6060}[MultiTool] Ошибка: превышено время ожидания диалога (Шаг " .. taxState .. ")", -1)
             taxState = 0
